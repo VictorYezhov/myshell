@@ -4,6 +4,9 @@
 
 #ifndef MYSHELL_MPWD_H
 #define MYSHELL_MPWD_H
+#ifdef __CYGWIN__
+#include <windows.h>
+#endif
 #include <iostream>
 #include <unistd.h>
 #include "ErrorInfo.h"

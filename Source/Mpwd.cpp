@@ -13,7 +13,15 @@ void myshell::Mpwd::help() {
 myshell::Mpwd::Mpwd() {
     token = "mpwd";
     char buf[100];
+#ifdef __CYGWIN__
+    GetModuleFileName( NULL, buf, 100 );
+    std::string::size_type pos = std::string( buf ).find_last_of( "\\/" );
+    current_dir = std::string( buf ).substr( 0, pos);
+    std::cout<<current_dir;
+#else
     current_dir = getcwd(buf, 100);
+     std::cout<<current_dir<<"\n";
+#endif
 }
 
 bool myshell::Mpwd::printCurrentDir() {
