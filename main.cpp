@@ -1,20 +1,8 @@
 
-#ifdef _WIN32
-#include "windows.h"
-#include <string.h>
-#endif
+
 #include <stdio.h>
 #include <string.h>
 
-#if defined(linux) || defined(__unix__) || defined(__linux__) || defined(__CYGWIN__) || defined(__APPLE__)
-#include <unistd.h>
-#include <sys/stat.h>
-#endif
-#if defined(__cplusplus) || defined(_cplusplus)
-#include <exception>  // terminate()
-#else
-#include <cstdlib>    // abort()
-#endif
 #include <iostream>
 #include "headers/Mpwd.h"
 #include "headers/Mexit.h"
@@ -50,13 +38,10 @@ void mpwdAction(std::string input,myshell::Mpwd *pwd);
 void mcdAction(std::string input);
 void merrnoAction(std::string input);
 int mexitAction(std::string input);
-void myCatAction(std::string input,myshell::Mpwd *pwd);
+void commandAction(std::string input,myshell::Mpwd *pwd);
 std::vector<std::string> parsePath(std::string path);
 bool match(char const *wildcart, char const *target);
-static int exec_prog(std::string pathToMyCat, std::vector<std::string> files);
-#ifdef _WIN32
-static int exec_prog_win_32(std::string pathToMyCat, std::vector<std::string> files);
-#endif
+
 int main(int argc, char *argv[]) {
 
 
@@ -64,15 +49,14 @@ int main(int argc, char *argv[]) {
     std::string input;
    // bool  working = true;
     while(true){
+        std::cout<<pwd->getCurrent_dir()+"\\myshell ";
         std::getline(std::cin, input);
-
         boost::trim(input);
-
         if(boost::contains(input,"mpwd")){
             mpwdAction(input, pwd);
             input.clear();
         } else if(boost::contains(input,"mexit")){
-            input.clear();
+            delete pwd;
             return mexitAction(input);
         } else if(boost::contains(input,"mcd")){
             mcdAction(input);
@@ -80,8 +64,8 @@ int main(int argc, char *argv[]) {
         } else if(boost::contains(input,"merrno")){
             merrnoAction(input);
             input.clear();
-        } else if(boost::contains(input,"mycat")){
-            myCatAction(input, pwd);
+        } else{
+            commandAction(input, pwd);
             input.clear();
         }
     }
@@ -94,7 +78,6 @@ void mpwdAction(std::string input, myshell::Mpwd *pwd){
     }
     pwd->printCurrentDir();
     input.clear();
-   // delete pwd;k
 }
 void mcdAction(std::string input){
     auto start_pos = input.find(" ");
@@ -103,8 +86,10 @@ void mcdAction(std::string input){
     auto *mcd = new myshell::Mcd();
     if(boost::contains(input,"-h")||boost::contains(input,"-help")){
         mcd->help();
+    } else {
+        mcd->changeDir(path);
     }
-    mcd->changeDir(path);
+    delete(mcd);
 }
 void merrnoAction(std::string input){
     auto *merrno = new myshell::Merrno();
@@ -112,32 +97,41 @@ void merrnoAction(std::string input){
         merrno->help();
     }
     merrno->printLastError();
+    delete(merrno);
 }
 int mexitAction(std::string input){
+    std::vector<std::string> data;
+    boost::split(data,input,boost::is_any_of(" "), boost::token_compress_on);
     auto *mexit = new myshell::Mexit();
     if(boost::contains(input,"-h")||boost::contains(input,"-help")){
         mexit->help();
     }
+    int code;
+
+        code = mexit->mexit(std::atoi(data.at(1).c_str()));
     delete mexit;
-    return  mexit->mexit();
+    return  code;
 }
-void myCatAction(std::string input, myshell::Mpwd* mpwd){
+void commandAction(std::string input, myshell::Mpwd* mpwd){
     using namespace std;
     auto start_pos = input.find(" ");
-   // char name[] = "mycat.exe";
-  //  int name_size = std::string(name).size();
+    auto *com = new myshell::Command();
+
     std::string path = input.substr(start_pos+1);
-    std::string pathToMyCat = mpwd->getCurrent_dir() +"\\mycat";
+    std::string program_name = input.substr(0,start_pos);
+    std::string pathToMyEXE;
+    if(boost::equals(program_name, "mycat"))
+        pathToMyEXE = mpwd->getCurrent_dir() +"/mycat";
+    else
+        pathToMyEXE = program_name;
     vector<std::string> args = parsePath(path);
     if(args.empty()){
         return;
     }
-    // additional information
-#ifdef _WIN32
-        exec_prog_win_32(pathToMyCat,args);
-#else
-        exec_prog(pathToMyCat,args);
-#endif
+
+    com->exec_prog(pathToMyEXE, args);
+    delete(com);
+
 }
 
 std::vector<std::string> parsePath(std::string path){
@@ -159,55 +153,55 @@ std::vector<std::string> parsePath(std::string path){
     pathes.clear();
     int i=0;
     for(auto s : names){
-        if(boost::contains(s,"-h") ||boost::contains(s,"-help") ) {
+        if(boost::contains(s,"-h") || boost::contains(s,"--help") ) {
             pathes.push_back("-h");
             i++;
-            continue;
-        }
-        //boost::replace_all(s,"X", " ");
-        if(boost::contains(s,"*")|| boost::contains(s, "?")){
-            DIR *dir;
-            struct dirent *ent;
-            auto * writable = new char[dirs.at(i).size()];
-            std::copy(dirs.at(i).begin(), dirs.at(i).end(), writable);
-           // writable[s.size()] = '\0';
-            if ((dir = opendir (writable)) != NULL) {
-                /* print all the files and directories within directory */
-                while ((ent = readdir (dir)) != NULL) {
-                    if(match(s.c_str(),ent->d_name)) {
-                        if(exists_test(dirs.at(i)+"\\"+ ent->d_name))
-                            pathes.push_back(dirs.at(i) + "\\" + ent->d_name);
-                        else{
-                            std::cout<<"File " << dirs.at(i) + "\\" + ent->d_name<<" does not exist"<<std::endl;
-                            pErrorInfo.error_code = ENOENT;
-                            pErrorInfo.error_info = "No such file or directory\n";
-                            pathes.clear();
-                            return  pathes;
+        } else {
+            if (boost::contains(s, "*") || boost::contains(s, "?")) {
+                DIR *dir;
+                struct dirent *ent;
+                auto *writable = new char[dirs.at(i).size()];
+                std::copy(dirs.at(i).begin(), dirs.at(i).end(), writable);
+                // writable[s.size()] = '\0';
+                if ((dir = opendir(writable)) != NULL) {
+                    /* print all the files and directories within directory */
+                    while ((ent = readdir(dir)) != NULL) {
+                        if (match(s.c_str(), ent->d_name)) {
+                            if (exists_test(dirs.at(i) + "\\" + ent->d_name))
+                                pathes.push_back(dirs.at(i) + "\\" + ent->d_name);
+                            else {
+                                std::cout << "File " << dirs.at(i) + "\\" + ent->d_name << " does not exist"
+                                          << std::endl;
+                                pErrorInfo.error_code = ENOENT;
+                                pErrorInfo.error_info = "No such file or directory\n";
+                                pathes.clear();
+                                return pathes;
+                            }
                         }
                     }
+                    closedir(dir);
+                    delete[] writable;
+                } else {
+                    /* could not open directory */
+                    std::cout << "Could not open directory " << writable << " to read files" << std::endl;
+                    pErrorInfo.error_code = EACCES;
+                    pErrorInfo.error_info = "Permission denied\n";
+                    pathes.clear();
+                    return pathes;//TODO EXIT
                 }
-                closedir (dir);
-                delete[] writable;
             } else {
-                /* could not open directory */
-                std::cout<<"Could not open directory "<< writable <<" to read files"<<std::endl;
-                pErrorInfo.error_code = EACCES;
-                pErrorInfo.error_info = "Permission denied\n";
-                pathes.clear();
-                return  pathes;//TODO EXIT
+                if (exists_test(dirs.at(i) + "\\" + s))
+                    pathes.push_back(dirs.at(i) + "\\" + s);
+                else {
+                    std::cout << "File " << dirs.at(i) + "\\" + s << " does not exist" << std::endl;
+                    pErrorInfo.error_code = ENOENT;
+                    pErrorInfo.error_info = "No such file or directory\n";
+                    pathes.clear();
+                    return pathes;
+                }
             }
-        } else{
-            if(exists_test(dirs.at(i)+"\\"+s))
-                pathes.push_back(dirs.at(i)+"\\"+s);
-            else{
-                std::cout<<"File " << dirs.at(i) + "\\" + s<<" does not exist"<<std::endl;
-                pErrorInfo.error_code = ENOENT;
-                pErrorInfo.error_info = "No such file or directory\n";
-                pathes.clear();
-                return  pathes;
-            }
+            i++;
         }
-        i++;
     }
 
     if(pathes.empty()){
@@ -217,88 +211,6 @@ std::vector<std::string> parsePath(std::string path){
     }
 }
 
-
-
-static int exec_prog(std::string pathToMyCat, std::vector<std::string> files)
-{
-    using namespace std;
-
-    char *args[files.size()+1];
-    char *writable;
-    writable = new char[files.at(0).size() + 2];
-    std::copy(files.at(0).begin(), files.at(0).end(), writable);
-    writable[files.at(0).size()] = '\0';
-    args[0] = writable;
-
-
-    for(int i=0; i< files.size(); i++){
-        writable = new char[files.at(i).size() + 1];
-        std::copy(files.at(i).begin(), files.at(i).end(), writable);
-        writable[files.at(i).size()] = '\0';
-        args[i+1] = writable;
-    }
-    args[files.size()+1] = nullptr;
-
-        pid_t pid;
-
-    if ((pid = fork()) == -1)
-        perror("fork error");
-    else if (pid == 0) {
-        execv(pathToMyCat.c_str(), args);
-        printf("Return not expected. Must be an execv error.n");
-        std::cout<<"Errno = " << errno;
-    }
-
-
-}
-#ifdef _WIN32
-static int exec_prog_win_32(std::string pathToMyCat, std::vector<std::string> files){
-    char lpszComLine[1024];  // для командной строки
-
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-    SECURITY_ATTRIBUTES sa;
-
-    HANDLE  hThread;
-    DWORD  IDThread;
-
-
-    std::stringstream ss;
-    ss<<"mycat.exe"<<" ";
-    for(auto file : files){
-        ss << file << " ";
-    }
-    ss<< '\0';
-
-    // устанавливаем атрибуты нового процесса
-    ZeroMemory(&si, sizeof(STARTUPINFO));
-    si.cb=sizeof(STARTUPINFO);
-    // формируем командную строку
-    wsprintf(lpszComLine, ss.str().c_str());
-    std::cout<<lpszComLine<<"\n";
-    // запускаем новый консольный процесс
-    if (!CreateProcess(
-            nullptr,    // имя процесса
-            lpszComLine,  // адрес командной строки
-           nullptr,    // атрибуты защиты процесса по умолчанию
-           nullptr,    // атрибуты защиты первичного потока по умолчанию
-            TRUE,    // наследуемые дескрипторы текущего процесса
-            // наследуются новым процессом
-           FALSE,  // новая консоль
-           nullptr,    // используем среду окружения процесса предка
-           nullptr,    // текущий диск и каталог, как и в процессе предке
-            &si,     // вид главного окна - по умолчанию
-            &pi      // здесь будут дескрипторы и идентификаторы
-            // нового процесса и его первичного потока
-    )
-            ){
-        std::cout<<("Failed to execute mycat.\n");
-    }
-    // закрываем дескрипторы нового процесса
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-}
-#endif
 
 bool match(char const *wildcart, char const *target) {
     for (; *wildcart != '\0'; ++wildcart) {

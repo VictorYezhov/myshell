@@ -10,8 +10,7 @@ void myshell::Mexit::help() {
     std::cout<<"Syntax: mexit [exit code] [-h|--help]"<<std::endl;
 }
 
-myshell::Mexit::Mexit() {
-    token = "mexit";
+myshell::Mexit::Mexit():token("mexit") {
 }
 
 int myshell::Mexit::mexit(int code) {

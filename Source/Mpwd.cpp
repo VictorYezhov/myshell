@@ -10,8 +10,8 @@ void myshell::Mpwd::help() {
     std::cout<<"Syntax: mpwd [-h|--help]"<<std::endl;
 }
 
-myshell::Mpwd::Mpwd() {
-    token = "mpwd";
+myshell::Mpwd::Mpwd():token("mpwd") {
+
     char buf[100];
 #ifdef __CYGWIN__
     GetModuleFileName( NULL, buf, 100 );

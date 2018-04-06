@@ -10,13 +10,13 @@ void myshell::Mcd::help() {
     std::cout<<"mcd - command to change current directory\n";
     std::cout<<"Syntax: mcd <path> [-h|--help]"<<std::endl;
 }
-myshell::Mcd::Mcd() {
-    token = "mcd";
+myshell::Mcd::Mcd():token("mcd") {
 }
 
 int myshell::Mcd::changeDir(std::string path){
     int res = chdir(path.c_str());
     if(res == -1){
+        std::cerr<<"Error happened while changing directoty \n";
         pErrorInfo.error_code = res;
         pErrorInfo.error_info = "Error happened while changing directoty ";
         return res;

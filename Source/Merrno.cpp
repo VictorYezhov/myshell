@@ -10,8 +10,7 @@ void myshell::Merrno::help() {
     std::cout<<"Syntax - merrno [-h|--help] "<<std::endl;
 }
 
-myshell::Merrno::Merrno() {
-    token = "merrno";
+myshell::Merrno::Merrno():token("merrno") {
 }
 
 void myshell::Merrno::printLastError() {
