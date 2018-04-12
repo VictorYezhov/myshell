@@ -16,7 +16,7 @@ myshell::Merrno::Merrno():token("merrno") {
 void myshell::Merrno::printLastError() {
 
     std::cout<<"Error code: "<<pErrorInfo.error_code<<std::endl;
-    if(pErrorInfo.error_code!=0) {
+    if(pErrorInfo.error_code != 0) {
         std::cout << "Error description: " << pErrorInfo.error_info << std::endl;
     }
 }

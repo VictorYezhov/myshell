@@ -14,13 +14,13 @@
 namespace  myshell {
     class Mpwd  {
     private:
-        std::string current_dir;
+        std::string working_dir;
         std::string token;
     public:
         Mpwd();
         void help();
         bool printCurrentDir();
-        const std::string &getCurrent_dir() const;
+        const std::string &getWorking_dir() const;
         void setCurrent_dir(const std::string &current_dir);
     };
 }

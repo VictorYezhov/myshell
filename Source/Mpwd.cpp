@@ -16,11 +16,10 @@ myshell::Mpwd::Mpwd():token("mpwd") {
 #ifdef __CYGWIN__
     GetModuleFileName( NULL, buf, 100 );
     std::string::size_type pos = std::string( buf ).find_last_of( "\\/" );
-    current_dir = std::string( buf ).substr( 0, pos);
-    std::cout<<current_dir;
+    working_dir = std::string( buf ).substr( 0, pos);
 #else
-    current_dir = getcwd(buf, 100);
-     std::cout<<current_dir<<"\n";
+    working_dir = getcwd(buf, 100);
+     std::cout<<working_dir<<"\n";
 #endif
 }
 
@@ -39,12 +38,12 @@ bool myshell::Mpwd::printCurrentDir() {
 }
 
 
-const std::string &myshell::Mpwd::getCurrent_dir() const {
-    return current_dir;
+const std::string &myshell::Mpwd::getWorking_dir() const {
+    return working_dir;
 }
 
 void myshell::Mpwd::setCurrent_dir(const std::string &current_dir) {
-    Mpwd::current_dir = current_dir;
+    Mpwd::working_dir = current_dir;
 }
 
 

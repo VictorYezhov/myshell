@@ -42,6 +42,7 @@ void commandAction(std::string input,myshell::Mpwd *pwd);
 std::vector<std::string> parsePath(std::string path);
 bool match(char const *wildcart, char const *target);
 
+
 int main(int argc, char *argv[]) {
 
 
@@ -49,7 +50,7 @@ int main(int argc, char *argv[]) {
     std::string input;
    // bool  working = true;
     while(true){
-        std::cout<<pwd->getCurrent_dir()+"\\myshell ";
+        std::cout<< pwd->getWorking_dir()+"\\myshell ";
         std::getline(std::cin, input);
         boost::trim(input);
         if(boost::contains(input,"mpwd")){
@@ -91,7 +92,7 @@ void mcdAction(std::string input){
     }
     delete(mcd);
 }
-void merrnoAction(std::string input){
+void merrnoAction(const std::string input){
     auto *merrno = new myshell::Merrno();
     if(boost::contains(input,"-h")||boost::contains(input,"-help")){
         merrno->help();
@@ -112,21 +113,23 @@ int mexitAction(std::string input){
     delete mexit;
     return  code;
 }
+
 void commandAction(std::string input, myshell::Mpwd* mpwd){
     using namespace std;
     auto start_pos = input.find(" ");
     auto *com = new myshell::Command();
 
     std::string path = input.substr(start_pos+1);
+    //cout<<"PATH = "<< path<<"\n";
     std::string program_name = input.substr(0,start_pos);
     std::string pathToMyEXE;
     if(boost::equals(program_name, "mycat"))
-        pathToMyEXE = mpwd->getCurrent_dir() +"/mycat";
+        pathToMyEXE = mpwd->getWorking_dir() +"\\mycat";
     else
         pathToMyEXE = program_name;
     vector<std::string> args = parsePath(path);
-    if(args.empty()){
-        return;
+    for(auto s: args){
+        std::cout<<s<<endl;
     }
 
     com->exec_prog(pathToMyEXE, args);
@@ -209,6 +212,7 @@ std::vector<std::string> parsePath(std::string path){
         pErrorInfo.error_info = "No such file or directory\n";
         return  pathes;
     }
+
 }
 
 
