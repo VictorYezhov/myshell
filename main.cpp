@@ -45,12 +45,11 @@ bool match(char const *wildcart, char const *target);
 
 int main(int argc, char *argv[]) {
 
-
     auto  *pwd = new myshell::Mpwd();
     std::string input;
    // bool  working = true;
     while(true){
-        std::cout<< pwd->getWorking_dir()+"\\myshell ";
+        std::cout<< pwd->getWorking_dir()+" $ myshell ";
         std::getline(std::cin, input);
         boost::trim(input);
         if(boost::contains(input,"mpwd")){
@@ -116,21 +115,25 @@ int mexitAction(std::string input){
 
 void commandAction(std::string input, myshell::Mpwd* mpwd){
     using namespace std;
+
+    input = input+" ";
     auto start_pos = input.find(" ");
     auto *com = new myshell::Command();
 
-    std::string path = input.substr(start_pos+1);
-    //cout<<"PATH = "<< path<<"\n";
+    std::string path = input.substr(start_pos+1, input.size());
+
     std::string program_name = input.substr(0,start_pos);
+
     std::string pathToMyEXE;
     if(boost::equals(program_name, "mycat"))
         pathToMyEXE = mpwd->getWorking_dir() +"\\mycat";
     else
         pathToMyEXE = program_name;
+
     vector<std::string> args = parsePath(path);
-    for(auto s: args){
-        std::cout<<s<<endl;
-    }
+
+    args.erase(args.end());
+
 
     com->exec_prog(pathToMyEXE, args);
     delete(com);
@@ -185,7 +188,6 @@ std::vector<std::string> parsePath(std::string path){
                     closedir(dir);
                     delete[] writable;
                 } else {
-                    /* could not open directory */
                     std::cout << "Could not open directory " << writable << " to read files" << std::endl;
                     pErrorInfo.error_code = EACCES;
                     pErrorInfo.error_info = "Permission denied\n";

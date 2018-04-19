@@ -16,7 +16,7 @@ myshell::Command::Command() {
 
 
 #ifdef _WIN32
-int myshell::Command::exec_prog_win_32(std::string pathToMyEXE, std::vector<std::string> files){
+int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string> files){
     char lpszComLine[1024];  // для командной строки
 
     STARTUPINFO si;
@@ -63,11 +63,12 @@ int myshell::Command::exec_prog_win_32(std::string pathToMyEXE, std::vector<std:
 int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string> files) {
     using namespace std;
 
+
     char *args[files.size()+1];
     char *writable;
-    writable = new char[files.at(0).size() + 2];
-    std::copy(files.at(0).begin(), files.at(0).end(), writable);
-    writable[files.at(0).size()] = '\0';
+    writable = new char[pathToMyEXE.size() + 2];
+    std::copy(pathToMyEXE.begin(), pathToMyEXE.end(), writable);
+    writable[pathToMyEXE.size()] = '\0';
     args[0] = writable;
 
 
@@ -84,6 +85,7 @@ int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string
     if ((pid = fork()) == -1)
         perror("fork error");
     else if (pid == 0) {
+
         execv(pathToMyEXE.c_str(), args);
         printf("Return not expected. Must be an execv error.n");
         std::cout<<"Errno = " << errno;
