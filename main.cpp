@@ -35,6 +35,7 @@ inline bool exists_test (const std::string& name) {
 #endif
 
 void mpwdAction(std::string input,myshell::Mpwd *pwd);
+bool is_file_or_dir(std::string path);
 void mcdAction(std::string input);
 void merrnoAction(std::string input);
 int mexitAction(std::string input);
@@ -52,6 +53,9 @@ int main(int argc, char *argv[]) {
         std::cout<< pwd->getWorking_dir()+" $ myshell ";
         std::getline(std::cin, input);
         boost::trim(input);
+        if(input.empty()){
+
+        }else
         if(boost::contains(input,"mpwd")){
             mpwdAction(input, pwd);
             input.clear();
@@ -126,7 +130,7 @@ void commandAction(std::string input, myshell::Mpwd* mpwd){
 
     std::string pathToMyEXE;
     if(boost::equals(program_name, "mycat"))
-        pathToMyEXE = mpwd->getWorking_dir() +"\\mycat";
+        pathToMyEXE = mpwd->getWorking_dir() +"/mycat";
     else
         pathToMyEXE = program_name;
 
@@ -142,11 +146,16 @@ void commandAction(std::string input, myshell::Mpwd* mpwd){
 
 std::vector<std::string> parsePath(std::string path){
     std::vector<std::string> pathes;
+    std::vector<std::string> other;
     boost::split(pathes,path,boost::is_any_of(" "), boost::token_compress_on);
-
+    for(int i=0;i<pathes.size();i++){
+        if(!is_file_or_dir(pathes[i]) && !pathes[i].empty()) {
+            other.push_back(pathes[i]);
+            pathes.erase(pathes.begin()+i);
+        }
+    }
     std::vector<std::string> dirs;
     std::vector<std::string> names;
-
     for(auto s : pathes){
         auto * writable = new char[s.size() + 1];
         std::copy(s.begin(), s.end(), writable);
@@ -155,14 +164,13 @@ std::vector<std::string> parsePath(std::string path){
         dirs.emplace_back(dirname(writable));
         delete[] writable;
     }
-
     pathes.clear();
+    for(auto s: other){
+        pathes.push_back(s);
+    }
     int i=0;
     for(auto s : names){
-        if(boost::contains(s,"-h") || boost::contains(s,"--help") ) {
-            pathes.push_back("-h");
-            i++;
-        } else {
+
             if (boost::contains(s, "*") || boost::contains(s, "?")) {
                 DIR *dir;
                 struct dirent *ent;
@@ -207,7 +215,6 @@ std::vector<std::string> parsePath(std::string path){
             }
             i++;
         }
-    }
 
     if(pathes.empty()){
         pErrorInfo.error_code = ENOENT;
@@ -250,4 +257,9 @@ bool match(char const *wildcart, char const *target) {
         }
     }
     return *target == '\0';
+}
+
+bool is_file_or_dir(std::string path) {
+    struct stat sb;
+    return stat(path.c_str(), &sb) != -1;
 }

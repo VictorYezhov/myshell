@@ -17,7 +17,7 @@ myshell::Command::Command() {
 
 #ifdef _WIN32
 int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string> files){
-    char lpszComLine[1024];  // для командной строки
+    char lpszComLine[1024];
 
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
@@ -29,33 +29,30 @@ int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string
     }
     ss<< '\0';
 
-    // устанавливаем атрибуты нового процесса
+
     ZeroMemory(&si, sizeof(STARTUPINFO));
     si.cb=sizeof(STARTUPINFO);
-    // формируем командную строку
+
     wsprintf(lpszComLine, ss.str().c_str());
     std::cout<<lpszComLine<<"\n";
-    // запускаем новый консольный процесс
+
     if (!CreateProcess(
-            nullptr,    // имя процесса
-            lpszComLine,  // адрес командной строки
-           nullptr,    // атрибуты защиты процесса по умолчанию
-           nullptr,    // атрибуты защиты первичного потока по умолчанию
-            TRUE,    // наследуемые дескрипторы текущего процесса
-            // наследуются новым процессом
-           FALSE,  // новая консоль
-           nullptr,    // используем среду окружения процесса предка
-           nullptr,    // текущий диск и каталог, как и в процессе предке
-            &si,     // вид главного окна - по умолчанию
-            &pi      // здесь будут дескрипторы и идентификаторы
-            // нового процесса и его первичного потока
-    )
+            nullptr,    //  procces name
+            lpszComLine,  // arguments
+           nullptr,    // defence attr
+           nullptr,    // thread deffence args
+            TRUE,    // inherit descriptors of current process
+
+           FALSE,  // open in new console
+           nullptr,    // env
+           nullptr,    // disk
+            &si,     //
+            &pi      //
             ){
         std::cout<<("Failed to execute "+pathToMyEXE+"\n");
         pErrorInfo.error_code = errno;
         pErrorInfo.error_info = "Error while executing " + pathToMyEXE +"\n";
     }
-    // закрываем дескрипторы нового процесса
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 }
@@ -70,6 +67,13 @@ int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string
     std::copy(pathToMyEXE.begin(), pathToMyEXE.end(), writable);
     writable[pathToMyEXE.size()] = '\0';
     args[0] = writable;
+    struct stat sb;
+    if(stat(pathToMyEXE.c_str(), &sb) == -1){
+        std::cerr<<"No such command found " + pathToMyEXE+"\n";
+        pErrorInfo.error_code = -1;
+        pErrorInfo.error_info = "Error while executing " + pathToMyEXE +"\n";
+        return  -1;
+    }
 
 
     for(int i=0; i< files.size(); i++){
@@ -85,14 +89,13 @@ int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string
     if ((pid = fork()) == -1)
         perror("fork error");
     else if (pid == 0) {
-
         execv(pathToMyEXE.c_str(), args);
         printf("Return not expected. Must be an execv error.n");
         std::cout<<"Errno = " << errno;
         pErrorInfo.error_code = errno;
         pErrorInfo.error_info = "Error while executing " + pathToMyEXE +"\n";
-
     }
+    return 0;
 }
 
 #endif

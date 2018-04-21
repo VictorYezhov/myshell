@@ -14,7 +14,13 @@ myshell::Mcd::Mcd():token("mcd") {
 }
 
 int myshell::Mcd::changeDir(std::string path){
-    int res = chdir(path.c_str());
+    int res;
+    if(path =="..\u0001"){
+        char writable[100];
+        res =  chdir(dirname(getcwd(writable, 100)));
+    } else {
+        res = chdir(path.c_str());
+    }
     if(res == -1){
         std::cerr<<"Error happened while changing directoty \n";
         pErrorInfo.error_code = res;

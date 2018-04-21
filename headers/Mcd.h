@@ -6,6 +6,7 @@
 #define MYSHELL_MCD_H
 #include <iostream>
 #include <unistd.h>
+#include <libgen.h>
 
 namespace  myshell {
 
