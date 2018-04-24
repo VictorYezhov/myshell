@@ -23,18 +23,16 @@ myshell::Mpwd::Mpwd():token("mpwd") {
 #endif
 }
 
-bool myshell::Mpwd::printCurrentDir() {
+std::string myshell::Mpwd::printCurrentDir() {
     char buf[100];
     auto dir = getcwd(buf, 100);
     if(errno == ERANGE){
         pErrorInfo.error_code = ERANGE;
         pErrorInfo.error_info = "Error while getting current directory";
         std::cout<<"Exeption!"<<std::endl;
-        return false;
+        return nullptr;
     }
-    std::cout<<dir<<std::endl;
-    pErrorInfo.error_code = 0;
-    return true;
+    return dir;
 }
 
 

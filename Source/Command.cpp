@@ -17,6 +17,16 @@ myshell::Command::Command() {
 
 #ifdef _WIN32
 int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string> files){
+
+    GetFileAttributes(pathToMyEXE.c_str()); // from winbase.h
+    if(INVALID_FILE_ATTRIBUTES == GetFileAttributes(pathToMyEXE) && GetLastError()==ERROR_FILE_NOT_FOUND)
+    {
+        std::cerr<<"No such command found " + pathToMyEXE+"\n";
+        pErrorInfo.error_code = -1;
+        pErrorInfo.error_info = "Error while executing " + pathToMyEXE +"\n";
+        return  -1;
+    }
+
     char lpszComLine[1024];
 
     STARTUPINFO si;

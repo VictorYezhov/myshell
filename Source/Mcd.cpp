@@ -27,4 +27,7 @@ int myshell::Mcd::changeDir(std::string path){
         pErrorInfo.error_info = "Error happened while changing directoty ";
         return res;
     }
+    return res;
 }
+
+

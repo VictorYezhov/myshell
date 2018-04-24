@@ -4,11 +4,15 @@
 
 #ifndef MYSHELL_MPWD_H
 #define MYSHELL_MPWD_H
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__)
 #include <windows.h>
+#include <unistd.h>
+#elif defined(linux) || defined(__unix__) || defined(__linux__) || defined(__CYGWIN__) || defined(__APPLE__)
+#include <unistd.h>
+#elif defined(_WIN32)
+#include <direct.h>
 #endif
 #include <iostream>
-#include <unistd.h>
 #include "ErrorInfo.h"
 
 namespace  myshell {
@@ -19,7 +23,7 @@ namespace  myshell {
     public:
         Mpwd();
         void help();
-        bool printCurrentDir();
+        std::string printCurrentDir();
         const std::string &getWorking_dir() const;
         void setCurrent_dir(const std::string &current_dir);
     };

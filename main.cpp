@@ -1,8 +1,4 @@
 
-
-#include <stdio.h>
-#include <string.h>
-
 #include <iostream>
 #include "headers/Mpwd.h"
 #include "headers/Mexit.h"
@@ -10,12 +6,8 @@
 #include "headers/Mcd.h"
 #include "headers/Command.h"
 #include <sstream>
-#include <string>
 #include <iterator>
-#include <vector>
 #include <boost/algorithm/string.hpp>
-#include "dirent.h"
-#include <libgen.h>
 
 #ifdef _WIN32
 
@@ -28,6 +20,8 @@ inline bool exists_test(const std::string& name) {
     }
 }
 #else
+#include "dirent.h"
+
 inline bool exists_test (const std::string& name) {
     struct stat buffer;
     return (stat (name.c_str(), &buffer) == 0);
@@ -48,9 +42,9 @@ int main(int argc, char *argv[]) {
 
     auto  *pwd = new myshell::Mpwd();
     std::string input;
-   // bool  working = true;
+    // bool  working = true;
     while(true){
-        std::cout<< pwd->getWorking_dir()+" $ myshell ";
+        std::cout<< pwd->printCurrentDir()+" $ myshell ";
         std::getline(std::cin, input);
         boost::trim(input);
         if(input.empty()){
@@ -80,7 +74,7 @@ void mpwdAction(std::string input, myshell::Mpwd *pwd){
     if(boost::contains(input,"-h")||boost::contains(input,"-help")){
         pwd->help();
     }
-    pwd->printCurrentDir();
+    std::cout<<pwd->printCurrentDir()<<std::endl;
     input.clear();
 }
 void mcdAction(std::string input){
@@ -112,7 +106,7 @@ int mexitAction(std::string input){
     }
     int code;
 
-        code = mexit->mexit(std::atoi(data.at(1).c_str()));
+    code = mexit->mexit(std::atoi(data.at(1).c_str()));
     delete mexit;
     return  code;
 }
@@ -136,8 +130,8 @@ void commandAction(std::string input, myshell::Mpwd* mpwd){
 
     vector<std::string> args = parsePath(path);
 
-    args.erase(args.end());
-
+    if(!args.empty())
+        args.erase(args.end()-1);
 
     com->exec_prog(pathToMyEXE, args);
     delete(com);
@@ -145,9 +139,15 @@ void commandAction(std::string input, myshell::Mpwd* mpwd){
 }
 
 std::vector<std::string> parsePath(std::string path){
+
     std::vector<std::string> pathes;
     std::vector<std::string> other;
     boost::split(pathes,path,boost::is_any_of(" "), boost::token_compress_on);
+
+
+    if(path.empty())
+        return pathes;
+
     for(int i=0;i<pathes.size();i++){
         if(!is_file_or_dir(pathes[i]) && !pathes[i].empty()) {
             other.push_back(pathes[i]);
@@ -171,56 +171,57 @@ std::vector<std::string> parsePath(std::string path){
     int i=0;
     for(auto s : names){
 
-            if (boost::contains(s, "*") || boost::contains(s, "?")) {
-                DIR *dir;
-                struct dirent *ent;
-                auto *writable = new char[dirs.at(i).size()];
-                std::copy(dirs.at(i).begin(), dirs.at(i).end(), writable);
-                // writable[s.size()] = '\0';
-                if ((dir = opendir(writable)) != NULL) {
-                    /* print all the files and directories within directory */
-                    while ((ent = readdir(dir)) != NULL) {
-                        if (match(s.c_str(), ent->d_name)) {
-                            if (exists_test(dirs.at(i) + "\\" + ent->d_name))
-                                pathes.push_back(dirs.at(i) + "\\" + ent->d_name);
-                            else {
-                                std::cout << "File " << dirs.at(i) + "\\" + ent->d_name << " does not exist"
-                                          << std::endl;
-                                pErrorInfo.error_code = ENOENT;
-                                pErrorInfo.error_info = "No such file or directory\n";
-                                pathes.clear();
-                                return pathes;
-                            }
+        if (boost::contains(s, "*") || boost::contains(s, "?")) {
+            DIR *dir;
+            struct dirent *ent;
+            auto *writable = new char[dirs.at(i).size()];
+            std::copy(dirs.at(i).begin(), dirs.at(i).end(), writable);
+            // writable[s.size()] = '\0';
+            if ((dir = opendir(writable)) != NULL) {
+                /* print all the files and directories within directory */
+                while ((ent = readdir(dir)) != NULL) {
+                    if (match(s.c_str(), ent->d_name)) {
+                        if (exists_test(dirs.at(i) + "/" + ent->d_name))
+                            pathes.push_back(dirs.at(i) + "/" + ent->d_name);
+                        else {
+                            std::cout << "File " << dirs.at(i) + "/" + ent->d_name << " does not exist"
+                            << std::endl;
+                            pErrorInfo.error_code = ENOENT;
+                            pErrorInfo.error_info = "No such file or directory\n";
+                            pathes.clear();
+                            return pathes;
                         }
                     }
-                    closedir(dir);
-                    delete[] writable;
-                } else {
-                    std::cout << "Could not open directory " << writable << " to read files" << std::endl;
-                    pErrorInfo.error_code = EACCES;
-                    pErrorInfo.error_info = "Permission denied\n";
-                    pathes.clear();
-                    return pathes;//TODO EXIT
                 }
+                closedir(dir);
+                delete[] writable;
             } else {
-                if (exists_test(dirs.at(i) + "\\" + s))
-                    pathes.push_back(dirs.at(i) + "\\" + s);
-                else {
-                    std::cout << "File " << dirs.at(i) + "\\" + s << " does not exist" << std::endl;
-                    pErrorInfo.error_code = ENOENT;
-                    pErrorInfo.error_info = "No such file or directory\n";
-                    pathes.clear();
-                    return pathes;
-                }
+                std::cout << "Could not open directory " << writable << " to read files" << std::endl;
+                pErrorInfo.error_code = EACCES;
+                pErrorInfo.error_info = "Permission denied\n";
+                pathes.clear();
+                return pathes;
             }
-            i++;
+        } else {
+            if (exists_test(dirs.at(i) + "/" + s))
+                pathes.push_back(dirs.at(i) + "/" + s);
+            else {
+                std::cout << "File " << dirs.at(i) + "/" + s << " does not exist" << std::endl;
+                pErrorInfo.error_code = ENOENT;
+                pErrorInfo.error_info = "No such file or directory\n";
+                pathes.clear();
+                return pathes;
+            }
         }
+        i++;
+    }
 
     if(pathes.empty()){
         pErrorInfo.error_code = ENOENT;
         pErrorInfo.error_info = "No such file or directory\n";
         return  pathes;
     }
+    return pathes;
 
 }
 
@@ -260,6 +261,18 @@ bool match(char const *wildcart, char const *target) {
 }
 
 bool is_file_or_dir(std::string path) {
+
+
+#ifdef _WIN32
+    GetFileAttributes(path.c_str());
+    if(INVALID_FILE_ATTRIBUTES == GetFileAttributes(path.c_str()) && GetLastError()==ERROR_FILE_NOT_FOUND)
+    {
+        return false;
+    } else{
+        return true;
+    }
+#else
     struct stat sb;
     return stat(path.c_str(), &sb) != -1;
+#endif
 }
