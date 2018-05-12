@@ -69,8 +69,6 @@ int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string
 #else
 int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string> files) {
     using namespace std;
-
-
     char *args[files.size()+1];
     char *writable;
     writable = new char[pathToMyEXE.size() + 2];
