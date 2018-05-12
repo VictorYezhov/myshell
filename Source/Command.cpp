@@ -99,6 +99,21 @@ int myshell::Command::exec_prog(std::string pathToMyEXE, std::vector<std::string
     if ((pid = fork()) == -1)
         perror("fork error");
     else if (pid == 0) {
+        int fd1, fd2;
+        if(iofiles.fout !="notset") {
+            fd1 = open(iofiles.fout.c_str(), O_WRONLY | O_CREAT);
+            dup2(fd1, 1);
+            close(fd1);
+            iofiles.fout = "notset";
+
+        }
+        if(iofiles.ferr != "notset"){
+            fd2 = open(iofiles.ferr.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            dup2(fd2, 2);
+            close(fd2);
+            iofiles.ferr = "notset";
+        }
+
         execv(pathToMyEXE.c_str(), args);
         printf("Return not expected. Must be an execv error.n");
         std::cout<<"Errno = " << errno;

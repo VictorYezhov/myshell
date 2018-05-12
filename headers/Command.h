@@ -13,7 +13,11 @@
 #if defined(linux) || defined(__unix__) || defined(__linux__) || defined(__CYGWIN__) || defined(__APPLE__)
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #endif
+#include "IOStreams.h"
 
 
 #include <iostream>

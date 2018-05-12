@@ -8,7 +8,8 @@
 #include <sstream>
 #include <iterator>
 #include <boost/algorithm/string.hpp>
-
+#include <fstream>
+#include "headers/IOStreams.h"
 #ifdef _WIN32
 
 inline bool exists_test(const std::string& name) {
@@ -36,15 +37,15 @@ int mexitAction(std::string input);
 void commandAction(std::string input,myshell::Mpwd *pwd);
 std::vector<std::string> parsePath(std::string path);
 bool match(char const *wildcart, char const *target);
-
-
+bool place_in_out(std::vector<std::string> &input);
+void read_args_from_file(std::vector<std::string> &args);
 int main(int argc, char *argv[]) {
 
     auto  *pwd = new myshell::Mpwd();
     std::string input;
     // bool  working = true;
     while(true){
-        std::cout<< pwd->printCurrentDir()+" $ myshell ";
+        std::cout<< pwd->printCurrentDir()+"myshell $  ";
         std::getline(std::cin, input);
         boost::trim(input);
         if(input.empty()){
@@ -145,6 +146,10 @@ std::vector<std::string> parsePath(std::string path){
     boost::split(pathes,path,boost::is_any_of(" "), boost::token_compress_on);
 
 
+    if(place_in_out(pathes)){
+        read_args_from_file(pathes);
+        return pathes;
+    }
     if(path.empty())
         return pathes;
 
@@ -152,6 +157,7 @@ std::vector<std::string> parsePath(std::string path){
         if(!is_file_or_dir(pathes[i]) && !pathes[i].empty()) {
             other.push_back(pathes[i]);
             pathes.erase(pathes.begin()+i);
+            i--;
         }
     }
     std::vector<std::string> dirs;
@@ -170,7 +176,6 @@ std::vector<std::string> parsePath(std::string path){
     }
     int i=0;
     for(auto s : names){
-
         if (boost::contains(s, "*") || boost::contains(s, "?")) {
             DIR *dir;
             struct dirent *ent;
@@ -275,4 +280,51 @@ bool is_file_or_dir(std::string path) {
     struct stat sb;
     return stat(path.c_str(), &sb) != -1;
 #endif
+}
+
+
+bool place_in_out(std::vector<std::string> &input){
+
+    for(int i =0; i< input.size(); i++){
+        if(input[i]==">" && input[i+2]=="2>&1"){
+            iofiles.ferr = input[i+1];
+            iofiles.fout = input[i+1];
+            input.erase(input.begin()+i);
+            input.erase(input.begin()+i);
+            input.erase(input.begin()+i);
+            return false;
+        }
+        if(input[i]==">"){
+            iofiles.fout  = input[i+1];
+            input.erase(input.begin()+i);
+            input.erase(input.begin()+i);
+            return false;
+
+        }
+        if(input[i]=="2>"){
+            iofiles.ferr = input[i+1];
+            input.erase(input.begin()+i);
+            input.erase(input.begin()+i);
+            return false;
+        }
+
+        if(input[i]=="<"){
+            iofiles.fin  = input[i+1];
+            input.erase(input.begin()+i);
+            input.erase(input.begin()+i);
+            return true;
+        }
+    }
+}
+void read_args_from_file(std::vector<std::string> &args) {
+
+
+    std::ifstream fin(iofiles.fin);
+    std::string str;
+
+    while (fin >> str) // Will read up to eof() and stop at every
+    {
+        if(str != "'':")
+            args.push_back(str);
+    }
 }
